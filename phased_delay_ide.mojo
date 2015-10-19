@@ -2,6 +2,7 @@
 <project name="phased_delay_ide" board="Mojo V3" language="Verilog">
   <files>
     <src top="true">mojo_top.v</src>
+    <src>generate_shift_registers.v</src>
     <src>input_capture.v</src>
     <src>serial_tx.v</src>
     <src>cclk_detector.v</src>

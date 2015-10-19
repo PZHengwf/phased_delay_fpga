@@ -9,8 +9,6 @@ module mojo_top(
     output[7:0]led,
     // AVR SPI connections
     output spi_miso,
-    output clk_o,
-    output clk_slow_o,
     input spi_ss,
     input spi_mosi,
     input spi_sck,
@@ -32,7 +30,6 @@ assign avr_rx = 1'bz;
 assign spi_channel = 4'bzzzz;
 
 assign led = 8'b1;
-assign clk_o = clk;
 
 /** avr interface
  *  get adc values from pin A0
@@ -70,15 +67,13 @@ avr_interface avr_interface (
  *  connect the adc value to the compare input of pwm
  *  pwm frequency is 40khz
  */
-
-reg [10:0] compare;
-wire reg10 = compare[10]; 
-assign reg10 = 1'b0;
+reg [9:0] compare;
 wire pwm_out;
+assign pwm_o = pwm_out;
 
 always @(*) begin
   if (new_sample && sample_channel == 4'b0) begin
-    compare[9:0] = sample_value;
+    compare = sample_value;
   end
 end
 
@@ -89,48 +84,101 @@ pwm pwm(
   .pwm(pwm_out)
 );
 
-//divide clk by 4, as loop limit will be maxed out
-reg clk_slow;
-wire clk_slow_w;
-assign clk_slow_w = clk_slow;
-assign clk_slow_o = clk_slow;
-
-clk_divider #(.N(4)) clk_divider(
-  .clk(clk),
-  .clk_d(clk_slow_w),
-  .rst(rst)
- );
-
 /** generate shift registers */
-//parameter N_SR = 32'd3471;
-parameter N_SR = 870;//loop limit is 1000 :(
-wire[N_SR-2:0] delay_w;
-genvar i;
-generate 
-  for (i = 0; i < N_SR-2; i = i+1) begin : for_gen0
-    shift_register sr(
-      .clk(clk_slow),
-      .rst(rst),
-      .d(delay_w[i]),
-      .q(delay_w[i+1])
-      );
-  end
-endgenerate
- 
+
+wire [6869:0] delay_w;
 
 //first wire has to be a reg, since it will be connected  to input
-
-assign pwm_o = pwm_out;
-
 shift_register sr0(
-  .clk(clk_slow),
+  .clk(clk),
   .rst(rst),
   .d(pwm_out),
   .q(delay_w[0])
 );
+//loop limit is about 1000 in the mojo IDE, so looping from 0 to ~6000 in one loop will fail
+//put the generate block into modules and split up work into loops of 500
+
+generate_shift_registers  #(.N(500)) gen_sr0 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[499:0])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr1 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[999:500])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr2 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[1499:1000])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr3 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[1999:1500])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr4 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[2499:2000])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr5 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[2999:2500])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr6 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[3499:3000])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr7 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[3999:3500])
+ );       
+
+generate_shift_registers  #(.N(500)) gen_sr8 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[4499:4000])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr9 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[4999:4500])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr10 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[5499:5000])
+ );
+ 
+generate_shift_registers  #(.N(500)) gen_sr11 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[5999:5500])
+ );
+ 
+generate_shift_registers  #(.N(870)) gen_sr12 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[6869:6000])
+ );
+
 
 /** assign outputs */
-integer nu_sr = 86;//347;//number of shift registers for a unit delay
+integer nu_sr = 343;//number of shift registers for a unit delay to achieve 15 deg shift
 assign signal[0] = pwm_out;
 genvar j;
 generate 
