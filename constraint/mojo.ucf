@@ -31,6 +31,8 @@ NET "signal<9>" LOC = P12 | IOSTANDARD = LVTTL;
 
 NET "select<0>" LOC = P57 | IOSTANDARD = LVTTL;
 NET "select<1>" LOC = P66 | IOSTANDARD = LVTTL;
+NET "select<2>" LOC = P74 | IOSTANDARD = LVTTL;
+NET "select<3>" LOC = P78 | IOSTANDARD = LVTTL;
 
 NET "spi_mosi" LOC = P44 | IOSTANDARD = LVTTL;
 NET "spi_miso" LOC = P45 | IOSTANDARD = LVTTL;

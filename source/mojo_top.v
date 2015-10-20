@@ -20,7 +20,7 @@ module mojo_top(
     input avr_rx_busy, // AVR Rx buffer full
     //output pwm_o,
     output reg [9:0] signal,
-    input[1:0] select,
+    input[3:0] select,
     input pwm_in
     );
 
@@ -100,8 +100,8 @@ pwm pwm(
 */
 /** generate shift registers */
 
-wire [3500:0] delay_w;
-
+wire [6000:0] delay_w;
+//input signal comes from pwm from arduino
 //first wire has to be a reg, since it will be connected  to input
 shift_register sr0(
   .clk(clk),
@@ -153,7 +153,37 @@ generate_shift_registers  #(.N(501)) gen_sr6 (
   .rst(rst),
   .delay_w(delay_w[3500:3000])
  );
+ generate_shift_registers  #(.N(501)) gen_sr7 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[4000:3500])
+ );
+ 
+generate_shift_registers  #(.N(501)) gen_sr8 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[4500:4000])
+ );
+ 
+generate_shift_registers  #(.N(501)) gen_sr9 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[5000:4500])
+ );
+ 
+generate_shift_registers  #(.N(501)) gen_sr10 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[5500:5000])
+ );
+ 
+generate_shift_registers  #(.N(501)) gen_sr11 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[6000:5500])
+ );
 
+ 
 /** assign outputs
  *  place active high switches as select with select[0] at pin 57
  *  'select' selects from the following phase angles:
@@ -162,25 +192,26 @@ generate_shift_registers  #(.N(501)) gen_sr6 (
  */
 //LUT generated for 10 bit select is too big. 
 //many need to use a 10 input mux and design comb. logic to get select signals
-//for now use a 2 bit select with to give phase angles -15, 0, 15
+//for now use a 4 bit select with to give phase angles -30, -15, 0, 15, 30
 
-reg signed [9:0] nu_sr;
-
-always @(*) begin
-  nu_sr = 0;
-  if (select == 2'b10) begin
-    nu_sr = -343;
-  end else if (select == 2'b01) begin
-    nu_sr = 343;
-  end else begin
-    nu_sr = 0;
-  end
-
-end
 
 always @(*) begin
   
-  if (nu_sr > 0) begin//nu_sr is positive
+  if (select == 4'b1000) begin//generate +30deg phase angle
+    
+    signal[0] <= delay_w[1];
+    signal[1] <= delay_w[662];
+    signal[2] <= delay_w[1324];
+    signal[3] <= delay_w[1986];
+    signal[4] <= delay_w[2648];
+    signal[5] <= delay_w[3310];
+    signal[6] <= delay_w[3972];
+    signal[7] <= delay_w[4634];
+    signal[8] <= delay_w[5296];
+    signal[9] <= delay_w[5958];
+    
+    
+  end else if (select == 4'b0100) begin //15 deg phase angle
     
     signal[0] <= delay_w[1];
     signal[1] <= delay_w[343];
@@ -191,22 +222,35 @@ always @(*) begin
     signal[6] <= delay_w[2058];
     signal[7] <= delay_w[2401];
     signal[8] <= delay_w[2744];
-    signal[9] <= delay_w[3430];
+    signal[9] <= delay_w[3087];
 
-  end else if (nu_sr < 0) begin
-   //nu_sr is negative and multiplication is signed
-    signal[0] <= delay_w[3500];
-    signal[1] <= delay_w[3157];
-    signal[2] <= delay_w[2814];
-    signal[3] <= delay_w[2471];
-    signal[4] <= delay_w[2128];
-    signal[5] <= delay_w[1785];
-    signal[6] <= delay_w[1442];
-    signal[7] <= delay_w[1099];
-    signal[8] <= delay_w[756];
-    signal[9] <= delay_w[70];
+  end else if (select == 4'b0010) begin //-15 deg phase angle
+   
+    signal[0] <= delay_w[3087];
+    signal[1] <= delay_w[2744];
+    signal[2] <= delay_w[2401];
+    signal[3] <= delay_w[2058];
+    signal[4] <= delay_w[1715];
+    signal[5] <= delay_w[1372];
+    signal[6] <= delay_w[1029];
+    signal[7] <= delay_w[686];
+    signal[8] <= delay_w[343];
+    signal[9] <= delay_w[1];
     
-  end else begin 
+  end else if (select == 4'b0001) begin //-30 deg phase angle
+    
+    signal[0] <= delay_w[5958];
+    signal[1] <= delay_w[5296];
+    signal[2] <= delay_w[4634];
+    signal[3] <= delay_w[3972];
+    signal[4] <= delay_w[3310];
+    signal[5] <= delay_w[2648];
+    signal[6] <= delay_w[1986];
+    signal[7] <= delay_w[1324];
+    signal[8] <= delay_w[662];
+    signal[8] <= delay_w[1];
+  
+  end else begin //0 deg phase angle 
   
     signal[0] <= delay_w[0];
     signal[1] <= delay_w[0];
