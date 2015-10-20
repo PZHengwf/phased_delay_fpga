@@ -18,9 +18,10 @@ module mojo_top(
     input avr_tx, // AVR Tx => FPGA Rx
     output avr_rx, // AVR Rx => FPGA Tx
     input avr_rx_busy, // AVR Rx buffer full
-    output pwm_o,
+    //output pwm_o,
     output reg [9:0] signal,
-    input[1:0] select
+    input[1:0] select,
+    input pwm_in
     );
 
 wire rst = ~rst_n; // make reset active high
@@ -79,7 +80,7 @@ input_capture input_capture(
  // pwm ctr_q is 11 bits to generate 40 kHz reset with 50 MHz clk
  // signal 'compare' will be compared to ctr_q, so set compare to 11 bits,
  // although output of adc is 10 bits
- 
+/* 
 reg [10:0] compare;
 
 wire pwm_out;
@@ -96,7 +97,7 @@ pwm pwm(
   .compare(compare),
   .pwm(pwm_out)
 );
-
+*/
 /** generate shift registers */
 
 wire [3500:0] delay_w;
@@ -105,7 +106,7 @@ wire [3500:0] delay_w;
 shift_register sr0(
   .clk(clk),
   .rst(rst),
-  .d(pwm_out),
+  .d(pwm_in),
   .q(delay_w[0])
 );
 //loop limit is about 1000 in the mojo IDE, so looping from 0 to ~6000 in one loop will fail
