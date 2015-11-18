@@ -19,7 +19,7 @@ module mojo_top(
     output avr_rx, // AVR Rx => FPGA Tx
     input avr_rx_busy, // AVR Rx buffer full
     //output pwm_o,
-    output reg [9:0] signal,
+    output reg [19:0] signal,
     input[3:0] select,
     input pwm_in
     );
@@ -63,44 +63,9 @@ avr_interface avr_interface (
     .new_rx_data()
   );
 
-input_capture input_capture(
-  .clk(clk),
-  .rst(rst),
-  .channel(channel),
-  .new_sample(new_sample),
-  .sample(sample),
-  .sample_channel(sample_channel)
- );
-
-
-/** pwm
- *  connect the adc value to the compare input of pwm
- *  pwm frequency is 40khz
- */
- // pwm ctr_q is 11 bits to generate 40 kHz reset with 50 MHz clk
- // signal 'compare' will be compared to ctr_q, so set compare to 11 bits,
- // although output of adc is 10 bits
-/* 
-reg [10:0] compare;
-
-wire pwm_out;
-assign pwm_o = pwm_out;
-
-always @(*) begin
-  compare[9:0] = sample;
-  compare[10] = 1'b0;
-end
-
-pwm pwm(
-  .rst(rst),
-  .clk(clk),
-  .compare(compare),
-  .pwm(pwm_out)
-);
-*/
 /** generate shift registers */
 
-wire [6000:0] delay_w;
+wire [8000:0] delay_w;
 //input signal comes from pwm from arduino
 //first wire has to be a reg, since it will be connected  to input
 shift_register sr0(
@@ -183,88 +148,92 @@ generate_shift_registers  #(.N(501)) gen_sr11 (
   .delay_w(delay_w[6000:5500])
  );
 
+generate_shift_registers  #(.N(501)) gen_sr12 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[6500:6000])
+ );
+generate_shift_registers  #(.N(501)) gen_sr13 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[7000:6500])
+ );
+generate_shift_registers  #(.N(501)) gen_sr14 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[7500:7000])
+ );
+generate_shift_registers  #(.N(501)) gen_sr15 (
+  .clk(clk),
+  .rst(rst),
+  .delay_w(delay_w[8000:7500])
+ );
+
  
 /** assign outputs
  *  place active high switches as select with select[0] at pin 57
- *  'select' selects from the following phase angles:
- *  -15, -12, -9, -6, -3, 3, 6, 9, 12, 15
- *  all other combinations give 0 phase
+ *  'select' maps the following beam angles:
+ *  -30, -25, -20, -15, -10, -5, 0, 
+ *    5, 10, 15, 20, 25, 30
+ *  to the 'select' values 0000, 0001, 0010 ... 1101
+ *  all other combinations give 0 angle
  */
+ 
 //LUT generated for 10 bit select is too big. 
 //many need to use a 10 input mux and design comb. logic to get select signals
 //for now use a 4 bit select with to give phase angles -30, -15, 0, 15, 30
 
+reg[9:0] multiplier;
+reg pos_angle;
+reg[5:0] index[19:0];
+index[19] = 3'd19;
+index[18] = 3'd18;
+index[17] = 3'd17;
+index[16] = 3'd16;
+index[15] = 3'd15;
+index[14] = 3'd14;
+index[13] = 3'd13;
+index[12] = 3'd12;
+index[11] = 3'd11;
+index[10] = 3'd10;
+index[9] = 3'd9;
+index[8] = 3'd8;
+index[7] = 3'd7;
+index[6] = 3'd6;
+index[5] = 3'd5;
+index[4] = 3'd4;
+index[3] = 3'd3;
+index[2] = 3'd2;
+index[1] = 3'd1;
+index[0] = 3'd0;
 
 always @(*) begin
-  
-  if (select == 4'b1000) begin//generate +30deg phase angle
-    
-    signal[0] <= delay_w[1];
-    signal[1] <= delay_w[662];
-    signal[2] <= delay_w[1324];
-    signal[3] <= delay_w[1986];
-    signal[4] <= delay_w[2648];
-    signal[5] <= delay_w[3310];
-    signal[6] <= delay_w[3972];
-    signal[7] <= delay_w[4634];
-    signal[8] <= delay_w[5296];
-    signal[9] <= delay_w[5958];
-    
-    
-  end else if (select == 4'b0100) begin //15 deg phase angle
-    
-    signal[0] <= delay_w[1];
-    signal[1] <= delay_w[343];
-    signal[2] <= delay_w[686];
-    signal[3] <= delay_w[1029];
-    signal[4] <= delay_w[1372];
-    signal[5] <= delay_w[1715];
-    signal[6] <= delay_w[2058];
-    signal[7] <= delay_w[2401];
-    signal[8] <= delay_w[2744];
-    signal[9] <= delay_w[3087];
-
-  end else if (select == 4'b0010) begin //-15 deg phase angle
-   
-    signal[0] <= delay_w[3087];
-    signal[1] <= delay_w[2744];
-    signal[2] <= delay_w[2401];
-    signal[3] <= delay_w[2058];
-    signal[4] <= delay_w[1715];
-    signal[5] <= delay_w[1372];
-    signal[6] <= delay_w[1029];
-    signal[7] <= delay_w[686];
-    signal[8] <= delay_w[343];
-    signal[9] <= delay_w[1];
-    
-  end else if (select == 4'b0001) begin //-30 deg phase angle
-    
-    signal[0] <= delay_w[5958];
-    signal[1] <= delay_w[5296];
-    signal[2] <= delay_w[4634];
-    signal[3] <= delay_w[3972];
-    signal[4] <= delay_w[3310];
-    signal[5] <= delay_w[2648];
-    signal[6] <= delay_w[1986];
-    signal[7] <= delay_w[1324];
-    signal[8] <= delay_w[662];
-    signal[8] <= delay_w[1];
-  
-  end else begin //0 deg phase angle 
-  
-    signal[0] <= delay_w[0];
-    signal[1] <= delay_w[0];
-    signal[2] <= delay_w[0];
-    signal[3] <= delay_w[0];
-    signal[4] <= delay_w[0];
-    signal[5] <= delay_w[0];
-    signal[6] <= delay_w[0];
-    signal[7] <= delay_w[0];
-    signal[8] <= delay_w[0];
-    signal[9] <= delay_w[0];
-  
+  if (select == 4'b0000) begin
+    multiplier <= 10'd411;
+    pos_angle <= 1'b0;
+  end else begin    
+    multiplier <= 10'd0;
+    pos_angle <= 1'b0;
   end
-
 end
 
+
+
+reg index
+genvar i;
+generate
+  for (i = 0; i < 20; i = i+1) begin: gen_signal
+  
+    always @(*) begin
+      if (pos_angle == 1'b1) begin
+        
+        signal[i] <= delay_w[i * multiplier];
+      end else begin
+        signal[i] <= delay_w[8000 - i * multiplier];
+      end
+    end
+  end
+endgenerate
+ 
+   
 endmodule
